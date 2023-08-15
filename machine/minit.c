@@ -237,7 +237,7 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_plic(dtb);
   query_chosen(dtb);
 
-  wake_harts();
+  //wake_harts();
   printm("[DEBUG] wake harts done\n");
 
   plic_init();

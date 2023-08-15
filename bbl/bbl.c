@@ -8,6 +8,7 @@
 #include "config.h"
 #include "fdt.h"
 #include <string.h>
+#include "../machine/dmac.h"
 
 extern char _payload_start, _payload_end; /* internal payload */
 static const void* entry_point;
@@ -104,6 +105,10 @@ void boot_other_hart(uintptr_t unused __attribute__((unused)))
 #endif
     }
   }
+  __asm__ volatile("nop");
+  dmac_test();
+  __asm__ volatile("nop");
+  __asm__ volatile("nop");
 
 #ifdef BBL_BOOT_MACHINE
   enter_machine_mode(entry, hartid, dtb_output());
