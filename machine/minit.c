@@ -234,7 +234,8 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1
   *p_fcsr = 0;
 #endif
   write_csr(mepc, fn);
-
+ 
+  printm("hartid :0x%d  0x5c4:0x%x\n", read_csr(mhartid), read_csr(0x5c4));
   register uintptr_t a0 asm ("a0") = arg0;
   register uintptr_t a1 asm ("a1") = arg1;
   asm volatile ("mret" : : "r" (a0), "r" (a1));

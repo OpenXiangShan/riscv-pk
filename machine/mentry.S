@@ -253,6 +253,7 @@ do_reset:
   li x29, 0
   li x30, 0
   li x31, 0
+  csrci 0x5C4, 0x4
   csrw mscratch, x0
 
   # write mtvec and make sure it sticks
@@ -287,9 +288,9 @@ do_reset:
   bnez a4, .LmultiHart
 
   # only start if mip is set
-  #csrr a2, mip
-  #andi a2, a2, MIP_MSIP
-  #beqz a2, .LmultiHart
+  csrr a2, mip
+  andi a2, a2, MIP_MSIP
+  beqz a2, .LmultiHart
 
   # make sure our hart id is within a valid range
   fence
