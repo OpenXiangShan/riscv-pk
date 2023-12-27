@@ -692,6 +692,7 @@ static void hart_filter_done(const struct fdt_scan_node *node, void *extra)
     uint32_t *len = (uint32_t*)filter->status;
     len[-2] = bswap(strlen("masked")+1);
     *filter->disabled_hart_mask |= (1 << filter->hart);
+    printm("hart_filter_mask :0x %x \n", *filter->disabled_hart_mask);
   }
 }
 
