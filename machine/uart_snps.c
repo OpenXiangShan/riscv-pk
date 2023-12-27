@@ -52,13 +52,6 @@
 #define ROM_START 0x10000000
 #define RAM_START 0x80000000
 
-/*
- * Current address usage: during flash startup,
- * core 0 copies code from flash to DDR.
- * After copying, core 0 sets 0x39001008 to 1 to notify core 1
- */
-#define RESET_SIGNAL_ADDR 0x39001008
-
 void uart_delay(unsigned int loops)
 {
   while(loops--){
@@ -107,6 +100,87 @@ void printInfo(unsigned int hartid){
   REG_WRITE(THR,0x44);
 }
 
+void printInfoL(unsigned int hartid){
+  register unsigned int value asm("t0");
+  register unsigned int status asm("t1");
+
+  value = REG_READ(LSR);
+  status = !(value & 0x60);
+  //while(!(value & 0x60)) // transmit empty and transmit holding reg empty
+  while(status) // transmit empty and transmit holding reg empty
+  {
+    //uart_delay(100);
+    value = REG_READ(LSR);
+    status = !(value & 0x60);
+  }
+  //REG_WRITE(THR,data);
+  REG_WRITE(THR,0x54);
+
+  value = REG_READ(LSR);
+  status = !(value & 0x60);
+  //while(!(value & 0x60)) // transmit empty and transmit holding reg empty
+  while(status) // transmit empty and transmit holding reg empty
+  {
+    //uart_delay(100);
+    value = REG_READ(LSR);
+    status = !(value & 0x60);
+  }
+
+  REG_WRITE(THR, '0'+ hartid);//ascii '0' +hartid
+
+  value = REG_READ(LSR);
+  status = !(value & 0x60);
+  //while(!(value & 0x60)) // transmit empty and transmit holding reg empty
+  while(status) // transmit empty and transmit holding reg empty
+  {
+    //uart_delay(100);
+    value = REG_READ(LSR);
+    status = !(value & 0x60);
+  }
+  //REG_WRITE(THR,data);
+  REG_WRITE(THR,0x4c); //ASCII 'L'
+}
+
+void printInfoW(unsigned int hartid){
+  register unsigned int value asm("t0");
+  register unsigned int status asm("t1");
+
+  value = REG_READ(LSR);
+  status = !(value & 0x60);
+  //while(!(value & 0x60)) // transmit empty and transmit holding reg empty
+  while(status) // transmit empty and transmit holding reg empty
+  {
+    //uart_delay(100);
+    value = REG_READ(LSR);
+    status = !(value & 0x60);
+  }
+  //REG_WRITE(THR,data);
+  REG_WRITE(THR,0x54);
+
+  value = REG_READ(LSR);
+  status = !(value & 0x60);
+  //while(!(value & 0x60)) // transmit empty and transmit holding reg empty
+  while(status) // transmit empty and transmit holding reg empty
+  {
+    //uart_delay(100);
+    value = REG_READ(LSR);
+    status = !(value & 0x60);
+  }
+
+  REG_WRITE(THR, '0'+ hartid);//ascii '0' +hartid
+
+  value = REG_READ(LSR);
+  status = !(value & 0x60);
+  //while(!(value & 0x60)) // transmit empty and transmit holding reg empty
+  while(status) // transmit empty and transmit holding reg empty
+  {
+    //uart_delay(100);
+    value = REG_READ(LSR);
+    status = !(value & 0x60);
+  }
+  //REG_WRITE(THR,data);
+  REG_WRITE(THR, 0x57); //ASCII 'W'
+}
 void printInfoRun(unsigned int hartid){
   register unsigned int value asm("t0");
   register unsigned int status asm("t1");
@@ -201,8 +275,8 @@ void initUart()
     //REG_WRITE(DLL,0x6c);   //0x00 200MHz/115200/16
     //REG_WRITE(DLL,0x36);   //0x00 100MHz/115200/16
     //REG_WRITE(DLL,0xa2);   //0x00 25MHz/9600/16
-    REG_WRITE(DLL,0x1b);   //0x00 50MHz/115200/16
-    //REG_WRITE(DLL, 0x41);  //0x00 10MHz/9600/16
+    //REG_WRITE(DLL,0x1b);   //0x00 50MHz/115200/16
+    REG_WRITE(DLL, 0x41);  //0x00 10MHz/9600/16
     //REG_WRITE(DLL, 0x82);  //0x00 20MHz/9600/16
     //REG_WRITE(DLL,0xD);  //0x00 2MHz/9600/16
 
@@ -257,9 +331,6 @@ void copyAndRun(void)
   uint64_t runOffset = run - start;
   register uint64_t *runAddr asm("t5") = ramStart + runOffset;
 
-  register volatile uint64_t *reset_lock = (uint64_t *)RESET_SIGNAL_ADDR;
-  __asm__ __volatile__("fence.i");
-  *reset_lock = 1;
   __asm__ __volatile__("fence.i");
 #ifdef START_DEBUG
   if (*reset_lock == 1) {
@@ -289,10 +360,8 @@ void copyAndRun(void)
   register uint64_t *run asm("t4") = &_run[0];
   uint64_t runOffset = run - start;
   register uint64_t *runAddr asm("t5") = ramStart + runOffset;
-  register volatile uint64_t *reset_lock = (uint64_t *)RESET_SIGNAL_ADDR;
   __asm__ __volatile__("fence.i");
 
-  *reset_lock = 1;
 #ifdef START_DEBUG
   if (*reset_lock == 1) {
 	for (count = 0; count < 10; count++)

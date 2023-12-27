@@ -8,10 +8,10 @@
     cpus {
         #address-cells = <1>;
         #size-cells = <0>;
-        timebase-frequency = <500000>;//500Khz
+        timebase-frequency = <100000>;//100Khz
         cpu0: cpu@0 {
             clock-frequency = <1000000>;
-            compatible = "XiangShan,Nanhu", "riscv";
+            compatible = "XiangShan,Nanhu-v3", "riscv";
             d-cache-block-size = <64>;
             d-cache-sets = <64>;
             d-cache-size = <16384>;
@@ -28,7 +28,7 @@
             reg = <0x0>;
             riscv,isa = "rv64imafdc";
             status = "okay";
-            timebase-frequency = <500000>;//500Khz
+            timebase-frequency = <100000>;//100Khz
             tlb-split;
             cpu0_intc: interrupt-controller {
             	#interrupt-cells = <1>;
@@ -39,7 +39,7 @@
 
         cpu1: cpu@1 {
             clock-frequency = <0>;
-            compatible = "XiangShan,Nanhu", "riscv";
+            compatible = "XiangShan,Nanhu-v3", "riscv";
             d-cache-block-size = <64>;
             d-cache-sets = <64>;
             d-cache-size = <16384>;
@@ -56,7 +56,7 @@
             reg = <0x1>;
             riscv,isa = "rv64imafdc";
             status = "okay";
-            timebase-frequency = <500000>;//500Khz
+            timebase-frequency = <100000>;//100Khz
             tlb-split;
             cpu1_intc: interrupt-controller {
             	#interrupt-cells = <1>;
@@ -67,7 +67,7 @@
 
         cpu2: cpu@2 {
             clock-frequency = <0>;
-            compatible = "XiangShan,Nanhu", "riscv";
+            compatible = "XiangShan,Nanhu-v3", "riscv";
             d-cache-block-size = <64>;
             d-cache-sets = <64>;
             d-cache-size = <16384>;
@@ -83,8 +83,8 @@
             next-level-cache = <&memory>;
             reg = <0x2>;
             riscv,isa = "rv64imafdc";
-            status = "disable";
-            timebase-frequency = <500000>;//500Khz
+            status = "okay";
+            timebase-frequency = <100000>;//100Khz
             tlb-split;
             cpu2_intc: interrupt-controller {
                 #interrupt-cells = <1>;
@@ -95,7 +95,7 @@
 
         cpu3: cpu@3 {
             clock-frequency = <0>;
-            compatible = "XiangShan,Nanhu", "riscv";
+            compatible = "XiangShan,Nanhu-v3", "riscv";
             d-cache-block-size = <64>;
             d-cache-sets = <64>;
             d-cache-size = <16384>;
@@ -111,8 +111,8 @@
             next-level-cache = <&memory>;
             reg = <0x3>;
             riscv,isa = "rv64imafdc";
-            status = "disable";
-            timebase-frequency = <500000>;//500Khz
+            status = "okay";
+            timebase-frequency = <100000>;//100Khz
             tlb-split;
             cpu3_intc: interrupt-controller {
                 #interrupt-cells = <1>;
@@ -140,7 +140,7 @@
             interrupts-extended = <&cpu0_intc 3 &cpu0_intc 7 &cpu1_intc 3 &cpu1_intc 7 &cpu2_intc 3 &cpu2_intc 7 &cpu3_intc 3 &cpu3_intc 7>;
             reg = <0x0 0x38000000 0x0 0x10000>;
             reg-names = "control";
-            clock-frequency-mhz = <25>;
+            clock-frequency-mhz = <10>;
         };
 
         PLIC: interrupt-controller@3c000000 {
@@ -156,7 +156,7 @@
 
         clkc: misc_clk_0 {
             #clock-cells = <0>;
-            clock-frequency = <25000000>;
+            clock-frequency = <10000000>;
             compatible = "fixed-clock";
         };
 
@@ -167,20 +167,20 @@
             reg-io-width = <0x04>;
             interrupt-parent = <&PLIC>;
             interrupts = <40>;
-            clock-frequency = <50000000>;
+            clock-frequency = <10000000>;
             status = "okay";
         };
 
     };
 
     chosen {
-         bootargs = "root=/dev/nvme0n1p2 rootfstype=ext4 rw rootwait console=ttyS0,115200n8 earlycon noinitrd";
+         bootargs = "root=/dev/nvme0n1p2 rootfstype=ext4 rw rootwait console=ttyS0,9600n8 earlycon noinitrd";
          stdout-path = "/soc/serial@310B0000";
     };
 
     memory: memory@100000000 {
          device_type = "memory";
-         reg = <0x0 0x80000000 0x2 0x00000000>;
+         reg = <0x0 0x80000000 0x0 0x80000000>;
     };
 };
 

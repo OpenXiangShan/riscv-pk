@@ -173,7 +173,7 @@ static void prci_test()
   *HLS()->timecmp = -1ULL;
 }
 
-static void hart_plic_init()
+static void hart_plic_init(void)
 {
   // clear pending interrupts
   *HLS()->ipi = 0;
@@ -202,9 +202,12 @@ static void wake_harts()
 {
   printm("[DEBUG] harts num: %d hart mask %x disabled hart mask %x\n", MAX_HARTS, hart_mask, disabled_hart_mask);
   hart_proceed = 1;
-  for (int hart = 0; hart < MAX_HARTS; ++hart)
-    if ((((~disabled_hart_mask & hart_mask) >> hart) & 1))
+  for (int hart = 0; hart < MAX_HARTS; ++hart){
+    if ((((~disabled_hart_mask & hart_mask) >> hart) & 1)){
+        printm("wake_harts ipi hart id:%d ipi:0x%x \r\n", hart, OTHER_HLS(hart)->ipi);
       *OTHER_HLS(hart)->ipi = 1; // wakeup the hart
+    }
+  }
 }
 
 void init_first_hart(uintptr_t hartid, uintptr_t dtb)

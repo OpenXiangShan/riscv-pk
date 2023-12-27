@@ -265,16 +265,21 @@ do_reset:
   li x29, 0
   li x30, 0
   li x31, 0
+  csrci 0x5C4, 0x4
 #ifdef S2C
   csrr a0, mhartid
   beqz a0, copy_and_run
 
 wait_for_copy_and_run:
-  la a4,0x39001008
-  LOAD a4, 0(a4)
-  beqz a4, wait_for_copy_and_run
-  csrr a0, mhartid
-  jal printInfo
+  wfi //Wfi is treated as a noop instruction
+  //csrr t0, mip
+  //andi t0, t0, MIP_MSIP
+  //beqz t0, wait_for_copy_and_run
+  nop
+  nop
+  nop
+  nop
+  nop
   jal noCopyAndRun
 
 copy_and_run :
@@ -332,9 +337,9 @@ _run:
   bnez a4, .LmultiHart
 
   # only start if mip is set
-  #csrr a2, mip
-  #andi a2, a2, MIP_MSIP
-  #beqz a2, .LmultiHart
+  csrr a2, mip
+  andi a2, a2, MIP_MSIP
+  beqz a2, .LmultiHart
 
   # make sure our hart id is within a valid range
   fence
