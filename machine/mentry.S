@@ -272,14 +272,9 @@ do_reset:
 
 wait_for_copy_and_run:
   wfi //Wfi is treated as a noop instruction
-  //csrr t0, mip
-  //andi t0, t0, MIP_MSIP
-  //beqz t0, wait_for_copy_and_run
-  nop
-  nop
-  nop
-  nop
-  nop
+  csrr t0, mip
+  andi t0, t0, MIP_MSIP
+  beqz t0, wait_for_copy_and_run
   jal noCopyAndRun
 
 copy_and_run :
@@ -293,12 +288,13 @@ copy_and_run :
 _run:
   csrr a0, mhartid
   jal printInfoRun
-  jal initBSS
-  csrw mscratch, x0
 
-  # reset the other core
-  //la x1, 0x39001008
-  //STORE x2, 0(x1)
+  /* only core0 initBss*/
+  bgtz a0, noinitBss
+  jal initBSS
+
+noinitBss:
+  csrw mscratch, x0
 
   # write mtvec and make sure it sticks
   la t0, trap_vector
