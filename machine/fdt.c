@@ -9,9 +9,14 @@
 
 static inline uint32_t bswap(uint32_t x)
 {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
   uint32_t y = (x & 0x00FF00FF) <<  8 | (x & 0xFF00FF00) >>  8;
   uint32_t z = (y & 0x0000FFFF) << 16 | (y & 0xFFFF0000) >> 16;
   return z;
+#else
+  /* No need to swap on big endian */
+  return x;
+#endif
 }
 
 static inline int isstring(char c)
@@ -450,10 +455,10 @@ static void plic_done(const struct fdt_scan_node *node, void *extra)
     if (hart < MAX_HARTS) {
       hls_t *hls = OTHER_HLS(hart);
       if (cpu_int == IRQ_M_EXT) {
-        hls->plic_m_ie     = (uintptr_t*)((uintptr_t)scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
+        hls->plic_m_ie     = (uint32_t*)((uintptr_t)scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
         hls->plic_m_thresh = (uint32_t*) ((uintptr_t)scan->reg + HART_BASE   + HART_SIZE   * index);
       } else if (cpu_int == IRQ_S_EXT) {
-        hls->plic_s_ie     = (uintptr_t*)((uintptr_t)scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
+        hls->plic_s_ie     = (uint32_t*)((uintptr_t)scan->reg + ENABLE_BASE + ENABLE_SIZE * index);
         hls->plic_s_thresh = (uint32_t*) ((uintptr_t)scan->reg + HART_BASE   + HART_SIZE   * index);
       } else {
         printm("PLIC wired hart %d to wrong interrupt %d", hart, cpu_int);

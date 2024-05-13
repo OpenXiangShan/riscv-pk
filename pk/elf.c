@@ -5,6 +5,7 @@
 #include "boot.h"
 #include "bits.h"
 #include "elf.h"
+#include "usermem.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
@@ -37,13 +38,13 @@ void load_elf(const char* fn, elf_info* info)
     goto fail;
 
 #if __riscv_xlen == 64
-  assert(IS_ELF64(eh));
+  kassert(IS_ELF64(eh));
 #else
-  assert(IS_ELF32(eh));
+  kassert(IS_ELF32(eh));
 #endif
 
 #ifndef __riscv_compressed
-  assert(!(eh.e_flags & EF_RISCV_RVC));
+  kassert(!(eh.e_flags & EF_RISCV_RVC));
 #endif
 
   size_t phdr_size = eh.e_phnum * sizeof(Elf_Phdr);
@@ -75,26 +76,31 @@ void load_elf(const char* fn, elf_info* info)
       panic("not a statically linked ELF program");
     }
     if(ph[i].p_type == PT_LOAD && ph[i].p_memsz) {
+      if (ph[i].p_filesz > ph[i].p_memsz)
+        goto fail;
       uintptr_t prepad = ph[i].p_vaddr % RISCV_PGSIZE;
       uintptr_t vaddr = ph[i].p_vaddr + bias;
       if (vaddr + ph[i].p_memsz > info->brk_min)
         info->brk_min = vaddr + ph[i].p_memsz;
       int flags2 = flags | (prepad ? MAP_POPULATE : 0);
       int prot = get_prot(ph[i].p_flags);
-      if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, prot | PROT_WRITE, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad)
-        goto fail;
-      memset((void*)vaddr - prepad, 0, prepad);
-      if (!(prot & PROT_WRITE))
-        if (do_mprotect(vaddr - prepad, ph[i].p_filesz + prepad, prot))
+      if (ph[i].p_filesz != 0) {
+        if (__do_mmap(vaddr - prepad, ph[i].p_filesz + prepad, prot | PROT_WRITE, flags2, file, ph[i].p_offset - prepad) != vaddr - prepad)
           goto fail;
+      }
+      memset_user((void*)vaddr - prepad, 0, prepad);
       size_t mapped = ROUNDUP(ph[i].p_filesz + prepad, RISCV_PGSIZE) - prepad;
       if (ph[i].p_memsz > mapped)
         if (__do_mmap(vaddr + mapped, ph[i].p_memsz - mapped, prot, flags|MAP_ANONYMOUS, 0, 0) != vaddr + mapped)
+          goto fail;
+      if (!(prot & PROT_WRITE))
+        if (do_mprotect(vaddr - prepad, ph[i].p_memsz + prepad, prot))
           goto fail;
     }
   }
 
   file_decref(file);
+  info->brk = ROUNDUP(info->brk_min, RISCV_PGSIZE);
   return;
 
 fail:

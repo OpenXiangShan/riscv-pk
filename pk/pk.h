@@ -17,7 +17,6 @@ typedef struct
   long epc;
   long badvaddr;
   long cause;
-  long insn;
 } trapframe_t;
 
 #define panic(s,...) do { do_panic(s"\n", ##__VA_ARGS__); } while(0)
@@ -35,6 +34,12 @@ int vsnprintf(char* out, size_t n, const char* s, va_list vl);
 int snprintf(char* out, size_t n, const char* s, ...);
 void start_user(trapframe_t* tf) __attribute__((noreturn));
 void dump_tf(trapframe_t*);
+
+static uint64_t lfsr63(uint64_t x)
+{
+  uint64_t bit = (x ^ (x >> 1)) & 1;
+  return (x >> 1) | (bit << 62);
+}
 
 static inline int insn_len(long insn)
 {

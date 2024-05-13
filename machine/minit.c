@@ -9,25 +9,50 @@
 #include "xuart.h"
 #include "uartlite.h"
 #include "uart16550.h"
+#include "uart_litex.h"
 #include "finisher.h"
 #include "disabled_hart_mask.h"
 #include "htif.h"
 #include <string.h>
 #include <limits.h>
 
-pte_t* root_page_table;
 uintptr_t mem_size;
 volatile uint64_t* mtime;
 volatile uint32_t* plic_priorities;
+uint64_t misa_image;
 size_t plic_ndevs;
 void* kernel_start;
 void* kernel_end;
 
 static void mstatus_init()
 {
+  uintptr_t mstatus = 0;
+#if __riscv_xlen == 32
+  uint32_t mstatush = 0;
+#endif
+
+  // Set endianness
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#if __riscv_xlen == 32
+  mstatush |= MSTATUSH_SBE | MSTATUSH_MBE;
+#else
+  mstatus |= MSTATUS_SBE | MSTATUS_MBE;
+#endif
+  mstatus |= MSTATUS_UBE;
+#endif
+
   // Enable FPU
-  //if (supports_extension('D') || supports_extension('F'))
-  //  write_csr(mstatus, MSTATUS_FS);
+  if (supports_extension('F'))
+    mstatus |= MSTATUS_FS;
+
+  // Enable vector extension
+  if (supports_extension('V'))
+    mstatus |= MSTATUS_VS;
+
+  write_csr(mstatus, mstatus);
+#if __riscv_xlen == 32 && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  write_csr(0x310, mstatush); /* mstatush is not known to gas */
+#endif
 
   // Enable user/supervisor use of perf counters
   if (supports_extension('S'))
@@ -40,7 +65,7 @@ static void mstatus_init()
 
   // Disable paging
   if (supports_extension('S'))
-    write_csr(sptbr, 0);
+    write_csr(satp, 0);
 }
 
 // send S-mode interrupts and most exceptions straight to S-mode
@@ -60,7 +85,7 @@ static void delegate_traps()
 
   write_csr(mideleg, interrupts);
   write_csr(medeleg, exceptions);
-  assert(read_csr(mideleg) == interrupts);
+  assert((read_csr(mideleg) & interrupts) == interrupts);
   assert(read_csr(medeleg) == exceptions);
 }
 
@@ -75,7 +100,7 @@ static void dump_misa(uint32_t misa) {
 
 static void fp_init()
 {
-  if (!supports_extension('D') && !supports_extension('F'))
+  if (!supports_extension('F'))
     return;
 
   assert(read_csr(mstatus) & MSTATUS_FS);
@@ -84,6 +109,13 @@ static void fp_init()
   for (int i = 0; i < 32; i++)
     init_fp_reg(i);
   write_csr(fcsr, 0);
+
+# if __riscv_flen == 32
+  uintptr_t d_mask = 1 << ('D' - 'A');
+  clear_csr(misa, d_mask);
+  assert(!(read_csr(misa) & d_mask));
+# endif
+
 #else
   uintptr_t fd_mask = (1 << ('F' - 'A')) | (1 << ('D' - 'A'));
   clear_csr(misa, fd_mask);
@@ -106,6 +138,7 @@ static void memory_init()
 
 static void hart_init()
 {
+  misa_image = read_csr(misa);
   mstatus_init();
   //fp_init();
 #ifndef BBL_BOOT_MACHINE
@@ -143,12 +176,12 @@ static void hart_plic_init()
   if (!plic_ndevs)
     return;
 
-  size_t ie_words = (plic_ndevs + 8 * sizeof(uintptr_t) - 1) /
-		(8 * sizeof(uintptr_t));
+  size_t ie_words = (plic_ndevs + 8 * sizeof(*HLS()->plic_s_ie) - 1) /
+		(8 * sizeof(*HLS()->plic_s_ie));
   for (size_t i = 0; i < ie_words; i++) {
      if (HLS()->plic_s_ie) {
         // Supervisor not always present
-        HLS()->plic_s_ie[i] = ULONG_MAX;
+        HLS()->plic_s_ie[i] = __UINT32_MAX__;
      }
   }
   *HLS()->plic_m_thresh = 1;
@@ -177,8 +210,8 @@ void init_first_hart(uintptr_t hartid, uintptr_t dtb)
   query_xuart(dtb);
   query_uartlite(dtb);
   query_uart16550(dtb);
+  query_uart_litex(dtb);
   query_htif(dtb);
-  printm("bbl loader\r\n");
 
   hart_init();
   hls_init(0); // this might get called again from parse_config_string
@@ -230,7 +263,7 @@ void enter_supervisor_mode(void (*fn)(uintptr_t), uintptr_t arg0, uintptr_t arg1
   write_csr(mstatus, mstatus);
   write_csr(mscratch, MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE);
 #ifndef __riscv_flen
-  uintptr_t *p_fcsr = MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE; // the x0's save slot
+  uintptr_t *p_fcsr = (uintptr_t*)(MACHINE_STACK_TOP() - MENTRY_FRAME_SIZE); // the x0's save slot
   *p_fcsr = 0;
 #endif
   write_csr(mepc, fn);

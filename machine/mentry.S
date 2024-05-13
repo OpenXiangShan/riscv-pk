@@ -255,6 +255,17 @@ do_reset:
   li x31, 0
   csrw mscratch, x0
 
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  # fixup endianness before making any loads or stores
+#if __riscv_xlen == 32
+  li t0, MSTATUSH_MBE
+  csrs CSR_MSTATUSH, t0
+#else
+  li t0, MSTATUS_MBE
+  csrs CSR_MSTATUS, t0
+#endif
+#endif
+
   # write mtvec and make sure it sticks
   la t0, trap_vector
   csrw mtvec, t0
@@ -267,9 +278,27 @@ do_reset:
   slli a2, a3, RISCV_PGSHIFT
   add sp, sp, a2
 
-  # Boot on the first hart
-  beqz a3, init_first_hart
+  bnez a3, .LmultiHartInit
 
+#ifdef ZERO_BSS
+  # Zero out BSS; linker script provides alignment and padding
+  la t0, _fbss
+  la t1, _end
+  beq t0, t1, 2f
+1:STORE zero, 0(t0)
+  addi t0, t0, REGBYTES
+  bne t0, t1, 1b
+2:
+#endif
+
+  # Boot on the first hart
+#ifdef CUSTOM_DTS
+  csrr a0, mhartid
+  la a1, dtb_start
+#endif
+  j init_first_hart
+
+.LmultiHartInit:
   # set MSIE bit to receive IPI
   li a2, MIP_MSIP
   csrw mie, a2
@@ -294,10 +323,21 @@ do_reset:
   # make sure our hart id is within a valid range
   fence
   li a2, MAX_HARTS
-  bltu a3, a2, init_other_hart
+  bgeu a3, a2, .Lcont
+  j init_other_hart
+.Lcont:
 #endif
   wfi
   j .LmultiHart
+
+#ifdef CUSTOM_DTS
+.section .dtb
+.align 3
+.global dtb_start, dtb_end
+dtb_start:
+.incbin "custom.dtb"
+dtb_end:
+#endif
 
   .bss
   .align RISCV_PGSHIFT
