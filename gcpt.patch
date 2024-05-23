@@ -19,7 +19,7 @@ index 5bb8cde..980c6b5 100644
    };
  	L11: memory@100000000 {
  		device_type = "memory";
--		reg = <0x0 0x80000000 0x0 0x2000000>;
+-		reg = <0x0 0x80000000 0x0 0x80000000>;
 +		reg = <0x0 0x800a0000 0x0 0x7ff60000>;
  	};
  };
