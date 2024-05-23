@@ -20,6 +20,7 @@ uintptr_t mem_size;
 volatile uint64_t* mtime;
 volatile uint32_t* plic_priorities;
 uint64_t misa_image;
+int scounteren_writable = 0;
 size_t plic_ndevs;
 void* kernel_start;
 void* kernel_end;
@@ -55,8 +56,11 @@ static void mstatus_init()
 #endif
 
   // Enable user/supervisor use of perf counters
-  if (supports_extension('S'))
+  if (supports_extension('S')) {
     write_csr(scounteren, -1);
+    if (read_csr(scounteren))
+      scounteren_writable = 1;
+  }
   if (supports_extension('U'))
     write_csr(mcounteren, -1);
 

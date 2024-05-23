@@ -36,6 +36,7 @@ extern volatile uint64_t* mtime;
 extern volatile uint32_t* plic_priorities;
 extern size_t plic_ndevs;
 extern uint64_t misa_image;
+extern int scounteren_writable;
 
 typedef struct {
   volatile uint32_t* ipi;

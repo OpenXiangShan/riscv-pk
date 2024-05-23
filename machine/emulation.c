@@ -157,7 +157,8 @@ DECLARE_EMULATION_FUNC(truly_illegal_insn)
 static inline int emulate_read_csr(int num, uintptr_t mstatus, uintptr_t* result)
 {
   uintptr_t counteren = -1;
-  if (EXTRACT_FIELD(mstatus, MSTATUS_MPP) == PRV_U)
+  // If scounter is natively not writable, we always emulate counters for U mode.
+  if (scounteren_writable && EXTRACT_FIELD(mstatus, MSTATUS_MPP) == PRV_U)
     counteren = read_csr(scounteren);
 
   switch (num)
