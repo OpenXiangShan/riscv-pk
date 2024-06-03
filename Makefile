@@ -25,7 +25,8 @@ BBL_CONFIG = --host=riscv64-unknown-elf --with-payload=$(BBL_PAYLOAD) \
 						 --with-arch=rv64imac --enable-logo #--enable-print-device-tree
 
 DTB = $(BBL_BUILD_PATH)/system.dtb
-DTS = dts/system.dts
+#DTS = dts/system.dts
+DTS = dts/system-nhv3a.dts
 
 ifeq ($(MAKECMDGOALS),qemu)
 BBL_ENV = CFLAGS=-D__QEMU__
@@ -50,6 +51,7 @@ bbl: $(BBL_BIN)
 $(BBL_BIN): $(BBL_ELF_BUILD)
 	$(RISCV_COPY) $(RISCV_COPY_FLAGS) $< $@
 	$(RISCV_DUMP) -d $< > $<.txt
+	/nfs/home/share/fpga/bin2fpgadata/bin2fpgadata -i build/bbl.bin
 
 $(BBL_BUILD_MAKEFILE):
 	mkdir -p $(@D)
@@ -65,7 +67,7 @@ $(BBL_ELF_BUILD): $(BBL_PAYLOAD) $(DTB) $(BBL_BUILD_MAKEFILE)
 	$(BBL_ENV) $(MAKE) -C $(BBL_BUILD_PATH)
 
 bbl-clean:
-	-rm -rf build
+	-rm -rf build data.txt
 
 .PHONY: bbl bbl-clean dummy_payload $(BBL_ELF_BUILD)
 

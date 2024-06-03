@@ -220,12 +220,7 @@ void dmac_test(void)
     unsigned int err_flag=0;
     unsigned int tmp;
     unsigned int testval = 0;
-    //unsigned long pma_csr0 = read_csr(0x7c0);
-    //unsigned long pma_csr2 = read_csr(0x7c2);
-    //printm("DMAC dmac_test(): ------------ pma_csr0:0x%16lx pma_csr2:0x%16lx\n", pma_csr0, pma_csr2);
-    
-    write_csr(0x7c0, 0xb0f0b0b0b0f0b00);
-    
+
     //Initialize source data for channel 1
     dmac_init_buf(CH1_SRCADDR_BASE,64);
     __asm__ volatile ("fence");

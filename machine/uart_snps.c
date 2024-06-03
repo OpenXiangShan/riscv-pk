@@ -3,7 +3,8 @@
 #ifndef _UART_REG_H_
 #define _UART_REG_H_
 
-#define           UART0_BASE	  0x310B0000	     //Size=  64K	 Max_offset=  0x00010000
+//#define           UART0_BASE	  0x310B0000	     //Size=  64K	 Max_offset=  0x00010000
+#define           UART0_BASE	  0x50000	     //Size=  64K	 Max_offset=  0x00010000
 #define           UART_BASE	  UART0_BASE          //Size=  64K	 Max_offset=  0x00010000
 /*uart register definitions*/
 #define SYNC_ADDR UART_BASE + 0xbc
@@ -275,8 +276,8 @@ void initUart()
     //REG_WRITE(DLL,0x6c);   //0x00 200MHz/115200/16
     //REG_WRITE(DLL,0x36);   //0x00 100MHz/115200/16
     //REG_WRITE(DLL,0xa2);   //0x00 25MHz/9600/16
-    //REG_WRITE(DLL,0x1b);   //0x00 50MHz/115200/16
-    REG_WRITE(DLL, 0x41);  //0x00 10MHz/9600/16
+    REG_WRITE(DLL,0x1b);   //0x00 50MHz/115200/16
+    //REG_WRITE(DLL, 0x41);  //0x00 10MHz/9600/16
     //REG_WRITE(DLL, 0x82);  //0x00 20MHz/9600/16
     //REG_WRITE(DLL,0xD);  //0x00 2MHz/9600/16
 

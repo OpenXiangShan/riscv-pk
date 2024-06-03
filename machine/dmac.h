@@ -1,7 +1,7 @@
 #ifndef _REGS_DMAC_AXI_H_
 #define _REGS_DMAC_AXI_H_
 
-#define REG_AP_DMAC_AXI0_BASE          (0x30040000)
+#define REG_AP_DMAC_AXI0_BASE          (0x1D0000)
 
 #define DMAC_AXI_COMMON_REG     0x0
 #define DMAC_AXI_CH1_REG        0x100
