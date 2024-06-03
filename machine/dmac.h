@@ -3,6 +3,9 @@
 
 #define REG_AP_DMAC_AXI0_BASE          (0x1D0000)
 
+#define KiB                     (1024)
+#define MiB                     (KiB * KiB)
+
 #define DMAC_AXI_COMMON_REG     0x0
 #define DMAC_AXI_CH1_REG        0x100
 #define DMAC_AXI_CH2_REG        0x200
@@ -184,6 +187,8 @@ enum {
 
 
 void dmac_test(void);
+void test_same_setindex(unsigned long dstmem, unsigned long srcmem, unsigned long size);
+void traverse_all_cache(unsigned long dstmem, unsigned long srcmem, unsigned long size);
 
 #endif
 

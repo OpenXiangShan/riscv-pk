@@ -7,6 +7,23 @@
 #define CH2_SRCADDR_BASE    0x900C0000
 #define CH2_DSTADDR_BASE    0x900D0000
 
+#define CACHE_LINE_SIZE         (64)
+
+#define L1I_CACHE_SIZE          (64*KiB)
+#define L1I_CACHE_WAY           (4)
+
+#define L1D_CACHE_SIZE          (64*KiB)
+#define L1D_CACHE_WAY           (4)
+
+#define L2_CACHE_SIZE           (256*KiB)
+#define L2_CACHE_WAY            (8)
+
+#define L3_CACHE_SIZE           (4*MiB)
+#define L3_CACHE_WAY            (8)
+#define L3_SET_SIZE             (L3_CACHE_SIZE / L3_CACHE_WAY)
+#define L3_SET_STRIDE           (L3_SET_SIZE)
+
+
 typedef unsigned int u32;
 
 void dmac_init_buf(unsigned  long long addr, unsigned int len)
@@ -192,7 +209,7 @@ void dmac_ch2_single_transfer(u32 type, u32 src_hs, u32 des_hs, \
 int dma_data_chk()
 {
 // check data
-    int i;
+    int i; 
     unsigned  int value;
     for (i=0;i<64;i=i+1) 
     {
@@ -209,6 +226,22 @@ int dma_data_chk()
         if (value != i) 
         {
             printm("\n dma chk Error.should be %0x but %0x. addr=%0x",i,value, CH2_DSTADDR_BASE + i*4);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int dma_data_check(unsigned long dstmem, unsigned long srcmem, unsigned long size)
+{
+    unsigned  int value, i;
+
+    for (i = 0; i < 64;i = i + 1) 
+    {
+        value = MEM_READ32(dstmem + i*4);
+        if (value != i) 
+        {
+            printm("\n dma chk Error.should be %0x but %0x. addr=%0x",i,value, dstmem + i*4);
             return 1;
         }
     }
@@ -277,3 +310,90 @@ void dmac_test(void)
 
     printm("DMAC: Test End !!!\n");
 }
+
+
+void dma_test_cacheline(unsigned long dstmem, unsigned long srcmem, unsigned long size)
+{
+    unsigned int err_flag = 0;
+    unsigned int tmp;
+    unsigned int testval = 0;
+    //Initialize source data for channel 1
+    dmac_init_buf(srcmem, size);
+    __asm__ volatile ("fence");
+
+// enable dmac_axi0
+    REG_WRITE(DMAC_AXI0_COMMON_CFG, 0x1);
+    testval = REG_READ(DMAC_AXI0_COMMON_CFG);
+    printm("DMAC: Start dmac config testval:0x%x !!!\n", testval);
+
+    // check dmac reset complete 
+    // ???to do set 0x1 to reset
+    tmp = REG_READ(DMAC_AXI0_COMMON_RST_REG);
+    while ((tmp & 0x1) != 0x0) {
+        tmp = REG_READ(DMAC_AXI0_COMMON_RST_REG);
+    }
+    
+    dmac_ch1_single_transfer(DWAXIDMAC_TT_FC_MEM_TO_MEM_DMAC, 0, 0, \
+            srcmem, dstmem, \
+            63, DWAXIDMAC_CH_CTL_L_INC, DWAXIDMAC_CH_CTL_L_INC, \
+            DWAXIDMAC_TRANS_WIDTH_32, DWAXIDMAC_TRANS_WIDTH_32, \
+            DWAXIDMAC_BURST_TRANS_LEN_1, DWAXIDMAC_BURST_TRANS_LEN_1);
+
+    
+    tmp = REG_READ(DMAC_AXI0_CH1_INTR_STATUS);
+    while ((tmp & 0x2) == 0x0) {
+        tmp = REG_READ(DMAC_AXI0_CH1_INTR_STATUS);
+    }
+
+// data transfer complete
+// check data
+    printm("DMAC: Start DDR Data Check  !!!\n");
+
+    __asm__ volatile ("fence");
+    err_flag  = dma_data_check(dstmem, srcmem, size);
+    __asm__ volatile ("fence");
+    
+    if (err_flag == 0)
+        printm("DMAC: dstmem:0x%lx srcmem:0x%lx size:0x%lx Data Check Success !!!\n", dstmem, srcmem, size);
+    else
+        printm("DMAC: dstmem:0x%lx srcmem:0x%lx size:0x%lx Data Check  Error\n", dstmem, srcmem, size);
+
+
+}
+
+void test_same_setindex(unsigned long dstmem, unsigned long srcmem, unsigned long size)
+{
+        int set_index = 0;
+        unsigned long tmp_dstaddr, tmp_srcaddr, tmpsize;
+        tmp_srcaddr = srcmem;
+
+        for (tmp_dstaddr = dstmem; tmp_dstaddr <= dstmem + size ; \
+                tmp_dstaddr += L3_SET_STRIDE, \
+                tmp_srcaddr += L3_SET_STRIDE) {
+
+                if (tmp_dstaddr > dstmem + size)
+                        break;
+
+                dma_test_cacheline(tmp_dstaddr, tmp_srcaddr, CACHE_LINE_SIZE); //dma test cacheline size
+        }
+    printm("DMAC: Test End !!!\n");
+
+}
+
+void traverse_all_cache(unsigned long dstmem, unsigned long srcmem, unsigned long size)
+{
+        int set_index = 0;
+        unsigned long tmp_dstaddr, tmp_srcaddr, tmpsize;
+        tmp_dstaddr = dstmem;
+        tmp_srcaddr = srcmem;
+
+        for (set_index = 0; set_index < L3_SET_SIZE;set_index++) {
+                tmp_dstaddr += CACHE_LINE_SIZE;
+                tmp_srcaddr += CACHE_LINE_SIZE;
+                if (tmp_dstaddr > dstmem + size)
+                        break;
+                dma_test_cacheline(tmp_dstaddr, tmp_srcaddr, CACHE_LINE_SIZE); //dma test cacheline size
+        }
+    printm("DMAC: Test End !!!\n");
+}
+
