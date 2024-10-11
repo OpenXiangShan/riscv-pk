@@ -2,10 +2,10 @@
 #include "mtrap.h"
 //#define set_bit1(in,pos) (in)=(in|(1<<pos))
 //#define set_bit0(in,pos) (in)=(in&(~(1<<pos)))
-#define CH1_SRCADDR_BASE    0x900A0000
-#define CH1_DSTADDR_BASE    0x900B0000
-#define CH2_SRCADDR_BASE    0x900C0000
-#define CH2_DSTADDR_BASE    0x900D0000
+#define CH1_SRCADDR_BASE    0x10000A0000
+#define CH1_DSTADDR_BASE    0x10000B0000
+#define CH2_SRCADDR_BASE    0x10000C0000
+#define CH2_DSTADDR_BASE    0x10000D0000
 
 #define CACHE_LINE_SIZE         (64)
 
@@ -35,8 +35,8 @@ void dmac_init_buf(unsigned  long long addr, unsigned int len)
     }
 }
 
-void dmac_ch1_single_transfer(u32 type, u32 src_hs, u32 des_hs, \
-        u32 src_addr, u32 des_addr, u32 blockTS, u32 src_addr_inc, \
+void dmac_ch1_single_transfer(u32 type, unsigned long long src_hs, unsigned long long des_hs, \
+        unsigned long long src_addr, unsigned long long des_addr, u32 blockTS, u32 src_addr_inc, \
         u32 des_addr_inc, u32 src_width, u32 des_width, \
         u32 src_burstsize, u32 des_burstsize)
 {
@@ -90,10 +90,10 @@ void dmac_ch1_single_transfer(u32 type, u32 src_hs, u32 des_hs, \
     REG_WRITE(DMAC_AXI0_CH1_CFG + 0x4, ch1_cfg_high);
 
     /* CHANNEL_SRC_ADDR */
-    REG_WRITE(DMAC_AXI0_CH1_SAR, src_addr); // src address -> 0x0
+    REG_WRITE64(DMAC_AXI0_CH1_SAR, src_addr); // src address -> 0x0
 
     /* CHANNEL_DES_ADDR */
-    REG_WRITE(DMAC_AXI0_CH1_DAR, des_addr); // des address -> 0x1f0000
+    REG_WRITE64(DMAC_AXI0_CH1_DAR, des_addr); // des address -> 0x1f0000
 
     /* TRANSFER_BLOCK_SIZE */
     REG_WRITE(DMAC_AXI0_CH1_BLOCK_TS, blockTS); // block size 14*32bit = 56 bytes
@@ -123,8 +123,8 @@ void dmac_ch1_single_transfer(u32 type, u32 src_hs, u32 des_hs, \
     REG_WRITE(DMAC_AXI0_COMMON_CH_EN, tmp | 0x1 << DMAC_CHAN_EN_WE_SHIFT | 0x1 << DMAC_CHAN_EN_SHIFT);
 }
 
-void dmac_ch2_single_transfer(u32 type, u32 src_hs, u32 des_hs, \
-            u32 src_addr, u32 des_addr, u32 blockTS, \
+void dmac_ch2_single_transfer(u32 type, unsigned long long src_hs, unsigned long long des_hs, \
+            unsigned long long src_addr, unsigned long long des_addr, u32 blockTS, \
             u32 src_addr_inc, u32 des_addr_inc, u32 src_width, \
             u32 des_width, u32 src_burstsize, u32 des_burstsize)
 {
@@ -176,9 +176,9 @@ void dmac_ch2_single_transfer(u32 type, u32 src_hs, u32 des_hs, \
     REG_WRITE(DMAC_AXI0_CH2_CFG + 0x4, ch2_cfg_high);
     
     /* CHANNEL_SRC_ADDR */
-    REG_WRITE(DMAC_AXI0_CH2_SAR, src_addr); // src address -> 0x0
+    REG_WRITE64(DMAC_AXI0_CH2_SAR, src_addr); // src address -> 0x0
     /* CHANNEL_DES_ADDR */
-    REG_WRITE(DMAC_AXI0_CH2_DAR, des_addr); // des address -> 0x1f0000
+    REG_WRITE64(DMAC_AXI0_CH2_DAR, des_addr); // des address -> 0x1f0000
     
     /* TRANSFER_BLOCK_SIZE */
     REG_WRITE(DMAC_AXI0_CH2_BLOCK_TS, blockTS); // block size 14*32bit = 56 bytes
@@ -261,7 +261,7 @@ void dmac_test(void)
     //Initialize source data for channel 2
     dmac_init_buf(CH2_SRCADDR_BASE , 64); 
     __asm__ volatile ("fence");
-
+    REG_WRITE(0x6400084,0x100);
 // enable dmac_axi0
     REG_WRITE(DMAC_AXI0_COMMON_CFG, 0x1);
     testval = REG_READ(DMAC_AXI0_COMMON_CFG);
@@ -273,28 +273,29 @@ void dmac_test(void)
     while ((tmp & 0x1) != 0x0) {
         tmp = REG_READ(DMAC_AXI0_COMMON_RST_REG);
     }
-    
+    printm("***REG_READ(DMAC_AXI0_COMMON_RST_REG):0x%x !!!\n", tmp);
     dmac_ch1_single_transfer(DWAXIDMAC_TT_FC_MEM_TO_MEM_DMAC, 0, 0, \
             CH1_SRCADDR_BASE, CH1_DSTADDR_BASE, \
             63, DWAXIDMAC_CH_CTL_L_INC, DWAXIDMAC_CH_CTL_L_INC, \
             DWAXIDMAC_TRANS_WIDTH_32, DWAXIDMAC_TRANS_WIDTH_32, \
             DWAXIDMAC_BURST_TRANS_LEN_1, DWAXIDMAC_BURST_TRANS_LEN_1);
-
+    printm("dmac_ch1_single_transfer\n");
     dmac_ch2_single_transfer(DWAXIDMAC_TT_FC_MEM_TO_MEM_DMAC, 0, 0, \
             CH2_SRCADDR_BASE, CH2_DSTADDR_BASE, \
             63, DWAXIDMAC_CH_CTL_L_INC, DWAXIDMAC_CH_CTL_L_INC, \
             DWAXIDMAC_TRANS_WIDTH_32, DWAXIDMAC_TRANS_WIDTH_32, \
             DWAXIDMAC_BURST_TRANS_LEN_1, DWAXIDMAC_BURST_TRANS_LEN_1);
-    
+    printm("dmac_ch2_single_transfer\n");
     tmp = REG_READ(DMAC_AXI0_CH1_INTR_STATUS);
     while ((tmp & 0x2) == 0x0) {
         tmp = REG_READ(DMAC_AXI0_CH1_INTR_STATUS);
     }
+    printm("REG_READ(DMAC_AXI0_CH1_INTR_STATUS)=%d\n", tmp);
     tmp = REG_READ(DMAC_AXI0_CH2_INTR_STATUS);
     while ((tmp & 0x2) == 0x0) {
          tmp = REG_READ(DMAC_AXI0_CH2_INTR_STATUS);
     }
-
+printm("REG_READ(DMAC_AXI0_CH2_INTR_STATUS)=%d\n", tmp);
 // data transfer complete
 // check data
     printm("DMAC: Start DDR Data Check  !!!\n");

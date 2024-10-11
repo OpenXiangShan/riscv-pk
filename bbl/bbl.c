@@ -107,8 +107,8 @@ void boot_other_hart(uintptr_t unused __attribute__((unused)))
   }
   __asm__ volatile("nop");
   dmac_test();
-  test_same_setindex(0xa0000000, 0xc0000000, 512*MiB);
-  traverse_all_cache(0xa0000000, 0xc0000000, 512*MiB);
+  //test_same_setindex(0xa0000000, 0xc0000000, 512*MiB);
+  //traverse_all_cache(0xa0000000, 0xc0000000, 512*MiB);
   __asm__ volatile("nop");
   __asm__ volatile("nop");
 

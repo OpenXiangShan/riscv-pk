@@ -1,7 +1,7 @@
 #ifndef _REGS_DMAC_AXI_H_
 #define _REGS_DMAC_AXI_H_
 
-#define REG_AP_DMAC_AXI0_BASE          (0x1D0000)
+#define REG_AP_DMAC_AXI0_BASE          (0x4200000)
 
 #define KiB                     (1024)
 #define MiB                     (KiB * KiB)
@@ -184,6 +184,8 @@ enum {
 #define MEM_READ(addr)  (*((volatile unsigned long long*)(((unsigned long long)addr))))
 #define BYTE_WRITE(addr, value)  (*((volatile unsigned char*)(((unsigned long long)addr)))) = (value)
 #define BYTE_READ(addr)  (*((volatile unsigned char*)(((unsigned long long)addr))))
+#define REG_WRITE64(addr, value)  (*((volatile unsigned long*)(((unsigned long long)addr)))) = (value)
+#define REG_READ64(addr)  (*((volatile unsigned long*)(((unsigned long long)addr))))
 
 
 void dmac_test(void);

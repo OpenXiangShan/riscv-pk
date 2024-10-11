@@ -3,7 +3,6 @@
 #ifndef _UART_REG_H_
 #define _UART_REG_H_
 
-//#define           UART0_BASE	  0x310B0000	     //Size=  64K	 Max_offset=  0x00010000
 #define           UART0_BASE	  0x50000	     //Size=  64K	 Max_offset=  0x00010000
 #define           UART_BASE	  UART0_BASE          //Size=  64K	 Max_offset=  0x00010000
 /*uart register definitions*/
@@ -50,8 +49,10 @@
 #define REG_WRITE(addr, value)  (*((volatile unsigned int*)((unsigned long long)addr))) = (value)
 #define REG_READ(addr)  (*((volatile unsigned int*)((unsigned long long)addr)))
 
-#define ROM_START 0x10000000
-#define RAM_START 0x80000000
+#define ROM_START 0x20000
+//#define ROM_START 0x10000000
+//#define RAM_START 0x80000000
+#define RAM_START 0x1000000000
 
 void uart_delay(unsigned int loops)
 {
@@ -276,8 +277,8 @@ void initUart()
     //REG_WRITE(DLL,0x6c);   //0x00 200MHz/115200/16
     //REG_WRITE(DLL,0x36);   //0x00 100MHz/115200/16
     //REG_WRITE(DLL,0xa2);   //0x00 25MHz/9600/16
-    REG_WRITE(DLL,0x1b);   //0x00 50MHz/115200/16
-    //REG_WRITE(DLL, 0x41);  //0x00 10MHz/9600/16
+    //REG_WRITE(DLL,0x1b);   //0x00 50MHz/115200/16
+    REG_WRITE(DLL, 0x41);  //0x00 10MHz/9600/16
     //REG_WRITE(DLL, 0x82);  //0x00 20MHz/9600/16
     //REG_WRITE(DLL,0xD);  //0x00 2MHz/9600/16
 
@@ -359,10 +360,11 @@ void copyAndRun(void)
 
   uint64_t count = 0;
   register uint64_t *run asm("t4") = &_run[0];
-  uint64_t runOffset = run - start;
+  register uint64_t runOffset asm("t6") = run - start;
   register uint64_t *runAddr asm("t5") = ramStart + runOffset;
   __asm__ __volatile__("fence.i");
 
+  REG_WRITE(THR,0x44);
 #ifdef START_DEBUG
   if (*reset_lock == 1) {
 	for (count = 0; count < 10; count++)

@@ -55,7 +55,7 @@
             next-level-cache = <&memory>;
             reg = <0x1>;
             riscv,isa = "rv64imafdc";
-            status = "okay";
+            status = "disable";
             timebase-frequency = <100000>;//100Khz
             tlb-split;
             cpu1_intc: interrupt-controller {
@@ -83,7 +83,7 @@
             next-level-cache = <&memory>;
             reg = <0x2>;
             riscv,isa = "rv64imafdc";
-            status = "okay";
+            status = "disable";
             timebase-frequency = <100000>;//100Khz
             tlb-split;
             cpu2_intc: interrupt-controller {
@@ -111,7 +111,7 @@
             next-level-cache = <&memory>;
             reg = <0x3>;
             riscv,isa = "rv64imafdc";
-            status = "okay";
+            status = "disable";
             timebase-frequency = <100000>;//100Khz
             tlb-split;
             cpu3_intc: interrupt-controller {
@@ -160,6 +160,19 @@
             compatible = "fixed-clock";
         };
 
+
+        serial@50000 {
+            compatible = "ns16550a";
+            reg = <0x0 0x50000 0x0 0x1000>;
+            reg-shift = <0x02>;
+            reg-io-width = <0x04>;
+            interrupt-parent = <&PLIC>;
+            interrupts = <40>;
+            clock-frequency = <10000000>;
+            status = "okay";
+        };
+
+/*
         serial@310B0000 {
             compatible = "ns16550a";
             reg = <0x0 0x310B0000 0x0 0x10000>;
@@ -170,17 +183,17 @@
             clock-frequency = <10000000>;
             status = "okay";
         };
-
+*/
     };
 
     chosen {
          bootargs = "root=/dev/nvme0n1p2 rootfstype=ext4 rw rootwait console=ttyS0,9600n8 earlycon noinitrd";
-         stdout-path = "/soc/serial@310B0000";
+         stdout-path = "/soc/serial@50000";
     };
 
-    memory: memory@100000000 {
+    memory: memory@10000000 {
          device_type = "memory";
-         reg = <0x0 0x80000000 0x0 0x80000000>;
+         reg = <0x10 0x00000000 0x0 0x80000000>;
     };
 };
 
