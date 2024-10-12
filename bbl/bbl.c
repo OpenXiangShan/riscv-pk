@@ -9,6 +9,7 @@
 #include "fdt.h"
 #include <string.h>
 #include "../machine/dmac.h"
+#include "../machine/sram.h"
 
 extern char _payload_start, _payload_end; /* internal payload */
 static const void* entry_point;
@@ -106,7 +107,8 @@ void boot_other_hart(uintptr_t unused __attribute__((unused)))
     }
   }
   __asm__ volatile("nop");
-  dmac_test();
+  //dmac_test();
+  sram_test();
   //test_same_setindex(0xa0000000, 0xc0000000, 512*MiB);
   //traverse_all_cache(0xa0000000, 0xc0000000, 512*MiB);
   __asm__ volatile("nop");

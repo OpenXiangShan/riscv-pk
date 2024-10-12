@@ -35,6 +35,7 @@ machine_c_srcs = \
   uartlite.c \
   uart_snps.c \
   dmac.c \
+  sram-test.c \
   uart16550.c \
   finisher.c \
   misaligned_ldst.c \
